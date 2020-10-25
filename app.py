@@ -50,7 +50,7 @@ def campaignsById(campaign_id):
         },
         {'$limit': 10}
     ])
-    unPackedResults = [x for x in results]
+    unPackedResults = [utils.create_presigned_url(x) for x in results]
 
     if len(unPackedResults) < 1:
         return utils.make_error(200,
