@@ -1,13 +1,13 @@
 from flask import Flask, jsonify
 from config import Config
 from utils import Utils
+from flask_cors import CORS, cross_origin
 
 config = Config()
 utils = Utils()
 app = Flask(__name__)
-
-
-
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 @app.route("/hello", methods=["GET"])
 def hello():
@@ -15,6 +15,7 @@ def hello():
 
 
 @app.route("/campaigns/<campaign_id>", methods=["GET"])
+@cross_origin()
 def campaignsById(campaign_id):
     try:
         id = int(campaign_id)
