@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from config import Config
 from utils import Utils
 from flask_cors import CORS, cross_origin
+import random
 
 config = Config()
 utils = Utils()
@@ -52,6 +53,8 @@ def campaignsById(campaign_id):
         {'$limit': 10}
     ])
     unPackedResults = [utils.create_presigned_url(x) for x in results]
+
+    random.shuffle(unPackedResults)
 
     if len(unPackedResults) < 1:
         return utils.make_error(404,
