@@ -57,8 +57,8 @@ def campaignsById(campaign_id):
     random.shuffle(unPackedResults)
 
     if len(unPackedResults) < 1:
-        return utils.make_error(404,
+        return utils.make_error(400,
                                 f'No results found for campaign_id: {id}',
-                                'Please try another campaign_id')
+                                'Please try another campaign_id'), 400
 
     return jsonify(unPackedResults)
