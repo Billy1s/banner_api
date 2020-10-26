@@ -10,6 +10,7 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+
 @app.route("/hello", methods=["GET"])
 def hello():
     return jsonify({'hello': 'world'})
@@ -21,9 +22,9 @@ def campaignsById(campaign_id):
     try:
         id = int(campaign_id)
     except ValueError:
-        return utils.make_error(500,
+        return utils.make_error(400,
                                 'campaign_id must be a int',
-                                "Please try again with a int")
+                                "Please try again with a int"), 400
 
     results = config.clicksDB.aggregate([
         {'$match':
@@ -51,6 +52,46 @@ def campaignsById(campaign_id):
             }
         },
         {'$limit': 10}
+    ])
+    unPackedResults = [utils.create_presigned_url(x) for x in results]
+
+    random.shuffle(unPackedResults)
+
+    if len(unPackedResults) < 1:
+        return campaignsByIdTopClicks(id)
+        # return utils.make_error(400,
+        #                         f'No results found for campaign_id: {id}',
+        #                         'Please try another campaign_id'), 400
+
+    return jsonify(unPackedResults)
+
+
+@app.route("/campaigns/topclicks/<campaign_id>", methods=["GET"])
+@cross_origin()
+def campaignsByIdTopClicks(campaign_id):
+    try:
+        id = int(campaign_id)
+    except ValueError:
+        return utils.make_error(400,
+                                'campaign_id must be a int',
+                                "Please try again with a int"), 400
+
+    results = config.clicksDB.aggregate([
+        {'$match':
+             {'campaign_id': id},
+         },
+        {'$group':
+            {
+                '_id': '$banner_id',
+                'totalClicks': {'$sum': 1}
+            }
+        },
+        {'$sort':
+            {
+                'totalClicks': -1
+            }
+        },
+        {'$limit': 5}
     ])
     unPackedResults = [utils.create_presigned_url(x) for x in results]
 
