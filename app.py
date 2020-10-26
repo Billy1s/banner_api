@@ -26,6 +26,15 @@ def campaignsById(campaign_id):
                                 'campaign_id must be a int',
                                 "Please try again with a int"), 400
 
+
+    #check campaign_id valid
+    res = config.clicksDB.find({'campaign_id': id}).limit(1)
+    oneRecord = [x for x in res]
+    if len(oneRecord) < 1:
+        return utils.make_error(400,
+                                'campaign_id could not be found',
+                                "Please try a different campaign_id"), 400
+
     results = config.clicksDB.aggregate([
         {'$match':
              {'campaign_id': id},
@@ -66,6 +75,7 @@ def campaignsById(campaign_id):
     return jsonify(unPackedResults)
 
 
+
 @app.route("/campaigns/topclicks/<campaign_id>", methods=["GET"])
 @cross_origin()
 def campaignsByIdTopClicks(campaign_id):
@@ -97,9 +107,13 @@ def campaignsByIdTopClicks(campaign_id):
 
     random.shuffle(unPackedResults)
 
-    if len(unPackedResults) < 1:
-        return utils.make_error(400,
-                                f'No results found for campaign_id: {id}',
-                                'Please try another campaign_id'), 400
+    # If less then 5 add random unique banners to make up to 5
+    if len(unPackedResults) < 5:
+        bannersToGet = 5 - len(unPackedResults)
+        currentBanners = [x['_id'] for x in unPackedResults]
+        newBannerIds = utils.generateUniqueBannerIds(currentBanners, bannersToGet)
+        newBannersUnpacked = [utils.create_presigned_url(x) for x in newBannerIds]
+        bannersToReturn = newBannersUnpacked + unPackedResults
+        return jsonify(bannersToReturn)
 
     return jsonify(unPackedResults)

@@ -1,5 +1,6 @@
 from flask import jsonify
 import boto3
+import random
 from botocore.exceptions import ClientError
 
 class Utils:
@@ -11,10 +12,22 @@ class Utils:
         })
         return response
 
+    def generateUniqueBannerIds(self, currentIds, numbersToAdd):
+        outputIds = []
+        for x in range(0, numbersToAdd):
+            while True:
+                randomNo = random.randint(100, 500)
+                if randomNo in currentIds:
+                    pass
+                else:
+                    outputIds.append(randomNo)
+                    break
+        return [{'_id': id} for id in outputIds]
+
     def create_presigned_url(self, data):
         bucket_name = 'ba-banners'
         object_name = f'images/image_{data["_id"]}.png'
-        expiration = 3600
+        expiration = 4000
 
         s3_client = boto3.client('s3')
         try:
@@ -28,6 +41,8 @@ class Utils:
         except ClientError as e:
             logging.error(e)
             return None
+
+
 
 
 
