@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from config import Config
 from utils import Utils
 from flask_cors import CORS, cross_origin
+from resources.errors import errors
 import random
 
 config = Config()
@@ -18,9 +19,8 @@ def hello():
 
 @app.errorhandler(404)
 def not_found(e):
-    return utils.make_error(404,
-                            'Route not known',
-                            "Please try a valid API endpoint"), 404
+    return jsonify(errors['UnknownRoute']), 404
+
 
 @app.route("/campaigns/<campaign_id>", methods=["GET"])
 @cross_origin()
@@ -28,18 +28,17 @@ def campaignsById(campaign_id):
     try:
         id = int(campaign_id)
     except ValueError:
-        return utils.make_error(400,
-                                'campaign_id must be a int',
-                                "Please try again with a int"), 400
+        return jsonify(errors['InvalidIdEntered']), 400
+        # return utils.make_error(400,
+        #                         'campaign_id must be a int',
+        #                         "Please try again with a int"), 400
 
-
-    #check campaign_id valid
+    # check campaign_id valid
     res = config.clicksDB.find({'campaign_id': id}).limit(1)
     oneRecord = [x for x in res]
     if len(oneRecord) < 1:
-        return utils.make_error(400,
-                                'campaign_id could not be found',
-                                "Please try a different campaign_id"), 400
+        return jsonify(errors['UnknownCampaignId']), 400
+
 
     results = config.clicksDB.aggregate([
         {'$match':
@@ -74,12 +73,8 @@ def campaignsById(campaign_id):
 
     if len(unPackedResults) < 1:
         return campaignsByIdTopClicks(id)
-        # return utils.make_error(400,
-        #                         f'No results found for campaign_id: {id}',
-        #                         'Please try another campaign_id'), 400
 
     return jsonify(unPackedResults)
-
 
 
 @app.route("/campaigns/topclicks/<campaign_id>", methods=["GET"])
@@ -88,9 +83,7 @@ def campaignsByIdTopClicks(campaign_id):
     try:
         id = int(campaign_id)
     except ValueError:
-        return utils.make_error(400,
-                                'campaign_id must be a int',
-                                "Please try again with a int"), 400
+        return jsonify(errors['InvalidIdEntered']), 400
 
     results = config.clicksDB.aggregate([
         {'$match':
