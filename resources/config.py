@@ -26,7 +26,7 @@ class Config:
             raise ValueError("Collection not recognised")
 
     def getCampaignBannerTopRevenue(self, campaign_id, limit=10):
-        self.clicksDB.aggregate([
+        return self.clicksDB.aggregate([
             {'$match':
                  {'campaign_id': campaign_id},
              },
@@ -54,7 +54,7 @@ class Config:
         ])
 
     def getCampaignBannerTopClicks(self, campaign_id, limit=5):
-        self.clicksDB.aggregate([
+        return self.clicksDB.aggregate([
             {'$match':
                  {'campaign_id': campaign_id},
              },
