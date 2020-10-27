@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
-from config import Config
-from utils import Utils
+from resources.config import Config
+from resources.utils import Utils
 from flask_cors import CORS, cross_origin
 from resources.errors import errors
 import random
@@ -10,12 +10,7 @@ utils = Utils()
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
-
-
-@app.route("/hello", methods=["GET"])
-def hello():
-    return jsonify({'hello': 'world'})
-
+import logging
 
 @app.errorhandler(404)
 def not_found(e):
@@ -29,52 +24,39 @@ def campaignsById(campaign_id):
         id = int(campaign_id)
     except ValueError:
         return jsonify(errors['InvalidIdEntered']), 400
-        # return utils.make_error(400,
-        #                         'campaign_id must be a int',
-        #                         "Please try again with a int"), 400
 
     # check campaign_id valid
-    res = config.clicksDB.find({'campaign_id': id}).limit(1)
+    res = config.checkCampaignId(id, 'clicks')
+
     oneRecord = [x for x in res]
+
     if len(oneRecord) < 1:
         return jsonify(errors['UnknownCampaignId']), 400
 
+    results = config.getCampaignBannerTopRevenue(id)
 
-    results = config.clicksDB.aggregate([
-        {'$match':
-             {'campaign_id': id},
-         },
-        {'$lookup':
-            {
-                'from': 'conversions',
-                'localField': '_id',
-                'foreignField': 'click_id',
-                'as': 'click_conversion'
-            }
-        },
-        {'$unwind': '$click_conversion'},
-        {'$group':
-            {
-                '_id': '$banner_id',
-                # 'campaign_id': {'$first': '$campaign_id'},
-                'totalRevenue': {'$sum': '$click_conversion.revenue'}
-            }
-        },
-        {'$sort':
-            {
-                'totalRevenue': -1
-            }
-        },
-        {'$limit': 10}
-    ])
+    # Unpack results and load path to s3 image
     unPackedResults = [utils.create_presigned_url(x) for x in results]
 
     random.shuffle(unPackedResults)
 
-    if len(unPackedResults) < 1:
+    unPackedResultsCount = len(unPackedResults)
+
+    # X > 10 & X in range(5,10)
+    if unPackedResultsCount >= 5:
+        return jsonify(unPackedResults)
+    # X in range(1,5)
+    elif unPackedResultsCount in range(1, 5):
+        topClickBannersToGet = 5 - unPackedResultsCount
+        topClicksResults = config.getCampaignBannerTopClicks(id)
+        topClicksUnPackedResults = [utils.create_presigned_url(x) for x in topClicksResults
+                                    if x['_id'] not in [x['_id'] for x in unPackedResults]]
+        bannersToReturn = unPackedResults + topClicksUnPackedResults[0:topClickBannersToGet]
+        return jsonify(bannersToReturn)
+    # X == 0
+    elif unPackedResultsCount == 0:
         return campaignsByIdTopClicks(id)
 
-    return jsonify(unPackedResults)
 
 
 @app.route("/campaigns/topclicks/<campaign_id>", methods=["GET"])
@@ -85,23 +67,14 @@ def campaignsByIdTopClicks(campaign_id):
     except ValueError:
         return jsonify(errors['InvalidIdEntered']), 400
 
-    results = config.clicksDB.aggregate([
-        {'$match':
-             {'campaign_id': id},
-         },
-        {'$group':
-            {
-                '_id': '$banner_id',
-                'totalClicks': {'$sum': 1}
-            }
-        },
-        {'$sort':
-            {
-                'totalClicks': -1
-            }
-        },
-        {'$limit': 5}
-    ])
+    # check campaign_id valid
+    res = config.checkCampaignId(id, 'clicks')
+    oneRecord = [x for x in res]
+    if len(oneRecord) < 1:
+        return jsonify(errors['UnknownCampaignId']), 400
+
+    results = config.getCampaignBannerTopClicks(id)
+
     unPackedResults = [utils.create_presigned_url(x) for x in results]
 
     random.shuffle(unPackedResults)
