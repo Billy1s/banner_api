@@ -16,6 +16,12 @@ def hello():
     return jsonify({'hello': 'world'})
 
 
+@app.errorhandler(404)
+def not_found(e):
+    return utils.make_error(404,
+                            'Route not known',
+                            "Please try a valid API endpoint"), 404
+
 @app.route("/campaigns/<campaign_id>", methods=["GET"])
 @cross_origin()
 def campaignsById(campaign_id):
