@@ -1,6 +1,6 @@
 import pymongo
 import os
-
+from datetime import datetime
 
 class Config:
 
@@ -15,7 +15,23 @@ class Config:
         mongoPassword = os.environ['mongoPassword']
         client = pymongo.MongoClient(
             f"mongodb+srv://{mongoUser}:{mongoPassword}@cluster0.bbz2d.mongodb.net/db1?retryWrites=true&w=majority")
-        return client[env + '-' + 'db1']
+        db = client[env + '-' + 'db' + self.checkTimeQuarter()]
+        return db
+
+    def checkTimeQuarter(self):
+        now = datetime.now()
+        current_time = int(now.strftime("%M"))
+        if current_time in range(0, 16):
+            return '1'
+        elif current_time in range(16, 31):
+            return '2'
+        elif current_time in range(31, 46):
+            return '3'
+        elif current_time in range(46, 61):
+            return '4'
+        else:
+            return '1'
+
 
     def checkCampaignId(self, campaign_id, collection='impressions'):
         if collection == 'impressions':
@@ -24,6 +40,7 @@ class Config:
             return self.clicksDB.find({'campaign_id': campaign_id}).limit(1)
         else:
             raise ValueError("Collection not recognised")
+
 
     def getCampaignBannerTopRevenue(self, campaign_id, limit=10):
         return self.clicksDB.aggregate([

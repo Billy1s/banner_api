@@ -10,11 +10,14 @@ utils = Utils()
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
-import logging
 
 @app.errorhandler(404)
 def not_found(e):
     return jsonify(errors['UnknownRoute']), 404
+
+@app.route("/hello", methods=["GET"])
+def hello():
+    return jsonify({'hello': 'world'})
 
 
 @app.route("/campaigns/<campaign_id>", methods=["GET"])
