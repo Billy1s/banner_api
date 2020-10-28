@@ -1,4 +1,4 @@
-service: bannerAPI
+service: bannerapiba
 
 provider:
   name: aws
@@ -12,7 +12,7 @@ plugins:
   - serverless-wsgi
   - serverless-python-requirements
 custom:
-  stage: "${opt:stage, self:provider.stage}"
+  stage: ${opt:stage, self:provider.stage}
   wsgi:
     app: app.app
     packRequirements: false
@@ -21,12 +21,7 @@ functions:
   app:
     handler: wsgi_handler.handler
     events:
-      - http:
-          path: hello
-          method: get
-          cors: true
-      - http:
-          path: campaigns
-          method: get
-          cors: true
+      - http: ANY /
+      - http: ANY {proxy+}
+
 
