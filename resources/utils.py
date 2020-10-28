@@ -1,5 +1,8 @@
 from flask import jsonify
 import boto3
+from botocore.config import Config
+import botocore
+
 import random
 from botocore.exceptions import ClientError
 
@@ -29,7 +32,9 @@ class Utils:
         object_name = f'images/image_{data["_id"]}.png'
         expiration = 4000
 
-        s3_client = boto3.client('s3')
+        config = Config(signature_version=botocore.UNSIGNED)
+        s3_client = boto3.client('s3', config=config)
+
         try:
             response = s3_client.generate_presigned_url('get_object',
                                                         Params={'Bucket': bucket_name,
